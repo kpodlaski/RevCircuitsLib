@@ -15,6 +15,9 @@
 
 using namespace std;
 
+rev_gate_factory* rev_circuit::gFactory;
+
+
 rev_function::rev_function(int linesCount, int* permut) : linesCount(linesCount){
 	permutationSize = 1<<linesCount;
 	permutation = new int[permutationSize];
@@ -88,6 +91,9 @@ void rev_circuit::append(string gate){
 	append(rev_circuit::gFactory->new_rev_gate(gate));
 }
 
+void rev_circuit::set_gates_factory(rev_gate_factory* _gFactory){
+	rev_circuit::gFactory = _gFactory;
+}
 
 
 rev_circuit* rev_circuit::copy(){
@@ -286,7 +292,7 @@ rev_gate* rev_gate_factory::new_toffoli_gate(string sgate){
 		begin = index+1;
 		index = sgate.find_first_of(',',begin);
 		line[i]= line_name_to_line_id(sgate.substr(begin,index));
-		cout<<endl;
+		cout<<"";
 	}
 	switch (gateLines){
 		case 1 : gate = new_not_gate(line[0]); break;
@@ -323,20 +329,25 @@ rev_circuit* optimize_circuit(rev_circuit* circuit){
 	rev_circuit* result = new rev_circuit(circuit->linesCount);
 	int lastOperationLine = -1;
 	set<string> commuting_gates;
-	for (vector<rev_gate*>::iterator gate; gate!=circuit->gates.end(); gate++){
+	for (vector<rev_gate*>::iterator gate=circuit->gates.begin(); gate!=circuit->gates.end(); gate++){
 		toffoli_gate* g = dynamic_cast<toffoli_gate*> (*gate);
 		if (g->operationLine == lastOperationLine) {
-			if (commuting_gates.insert(g->name).second==true){
-				result->append(g);
+			if (commuting_gates.insert(g->name).second==false){
+					commuting_gates.erase(g->name);
 			}
 		}
 		else{
+			for (set<string>::iterator cgate = commuting_gates.begin(); cgate!=commuting_gates.end(); cgate++){
+					result->append(*cgate);
+			}
+
 			commuting_gates.clear();
 			lastOperationLine = g->operationLine;
-			result->append(g);
 			commuting_gates.insert(g->name);
 		}
-
+	}
+	for (set<string>::iterator cgate = commuting_gates.begin(); cgate!=commuting_gates.end(); cgate++){
+			result->append(*cgate);
 	}
 	return result;
 }

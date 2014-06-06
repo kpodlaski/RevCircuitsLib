@@ -68,6 +68,8 @@ public :
 	virtual void addRight(string gate);
 	virtual void append(string gate);
 	vector<rev_gate*> gates;
+	static void set_gates_factory(rev_gate_factory* gFactory);
+
 private:
 	stringstream sname;
 	static rev_gate_factory* gFactory;
